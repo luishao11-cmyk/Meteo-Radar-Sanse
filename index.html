@@ -1,0 +1,284 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08111f">
+  <title>Meteo Radar Sanse</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f;
+      --panel: #111e30;
+      --panel2: #17263a;
+      --text: #edf4ff;
+      --muted: #91a4bd;
+      --cyan: #48d8ef;
+      --blue: #579cff;
+      --purple: #b58aff;
+      --border: #263950;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -20%, #193b5a 0, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1100px, 100%);
+      margin: auto;
+      padding: 22px 18px 50px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 0 25px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 45px;
+      height: 45px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #167caa, #6049a6);
+      font-size: 24px;
+    }
+
+    h1 { font-size: 21px; margin: 0; letter-spacing: .3px; }
+    .subtitle { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .status {
+      color: #6de0a5;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 1.7px;
+      text-transform: uppercase;
+    }
+
+    .hero {
+      padding: 30px 0 22px;
+    }
+
+    .hero h2 {
+      font-size: clamp(25px, 5vw, 38px);
+      margin: 8px 0;
+    }
+
+    .hero p { color: var(--muted); margin: 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: linear-gradient(145deg, var(--panel2), var(--panel));
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      padding: 17px;
+      min-width: 0;
+    }
+
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { font-size: 27px; font-weight: 750; margin-top: 9px; }
+    .metric-note { color: var(--muted); font-size: 11px; margin-top: 5px; }
+
+    section { margin-top: 30px; }
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    h3 { margin: 0; font-size: 17px; }
+    .tag { color: var(--muted); font-size: 11px; }
+
+    .models {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .model-name { font-size: 14px; font-weight: 750; }
+    .model-value { font-size: 30px; font-weight: 750; margin: 14px 0 4px; }
+    .ecmwf { border-top: 3px solid var(--cyan); }
+    .gfs { border-top: 3px solid var(--blue); }
+    .arome { border-top: 3px solid var(--purple); }
+    .model-detail { color: var(--muted); font-size: 12px; }
+
+    .forecast {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .day {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px 5px;
+      text-align: center;
+    }
+
+    .day-name { font-size: 11px; color: var(--muted); }
+    .day-icon { font-size: 22px; margin: 10px 0; }
+    .day-temp { font-size: 13px; font-weight: 700; }
+    .day-rain { color: var(--cyan); font-size: 10px; margin-top: 7px; }
+
+    .notice {
+      background: #101e30;
+      border: 1px dashed #38516d;
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 17px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    footer {
+      margin-top: 35px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    @media (max-width: 650px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .models { grid-template-columns: 1fr; }
+      .forecast { grid-template-columns: repeat(4, 1fr); }
+      header { align-items: flex-start; }
+      .status { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">🌦️</div>
+        <div>
+          <h1>METEO RADAR SANSE</h1>
+          <div class="subtitle">Estación meteorológica · San Sebastián de los Reyes</div>
+        </div>
+      </div>
+      <div class="status">● SISTEMA ACTIVO</div>
+    </header>
+
+    <div class="hero">
+      <div class="eyebrow">Panel meteorológico</div>
+      <h2>San Sebastián de los Reyes</h2>
+      <p>Madrid · 40.5479° N · 3.6262° O</p>
+    </div>
+
+    <section>
+      <div class="section-heading">
+        <h3>Situación actual</h3>
+        <span class="tag">Datos pendientes de conexión</span>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="metric-label">Temperatura</div>
+          <div class="metric-value" id="temperature">-- °C</div>
+          <div class="metric-note">A 2 metros</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Sensación térmica</div>
+          <div class="metric-value" id="feels">-- °C</div>
+          <div class="metric-note">Sensación exterior</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Viento</div>
+          <div class="metric-value" id="wind">-- km/h</div>
+          <div class="metric-note">Velocidad actual</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Humedad</div>
+          <div class="metric-value" id="humidity">-- %</div>
+          <div class="metric-note">Humedad relativa</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h3>Comparativa de modelos</h3>
+        <span class="tag">Tres fuentes independientes</span>
+      </div>
+      <div class="models">
+        <div class="card ecmwf">
+          <div class="model-name">ECMWF</div>
+          <div class="model-value" id="ecmwf">-- °C</div>
+          <div class="model-detail">Modelo europeo</div>
+        </div>
+        <div class="card gfs">
+          <div class="model-name">GFS</div>
+          <div class="model-value" id="gfs">-- °C</div>
+          <div class="model-detail">Modelo americano</div>
+        </div>
+        <div class="card arome">
+          <div class="model-name">AROME</div>
+          <div class="model-value" id="arome">-- °C</div>
+          <div class="model-detail">Alta resolución · Francia</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h3>Previsión próximos 7 días</h3>
+        <span class="tag">Sanse</span>
+      </div>
+      <div class="forecast" id="forecast">
+        <div class="notice" style="grid-column:1/-1">
+          La previsión aparecerá aquí cuando conectemos el archivo radar.json.
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h3>Radar y evolución meteorológica</h3>
+      </div>
+      <div class="notice">
+        <strong>RADAR METEOROLÓGICO</strong><br>
+        Zona preparada para incorporar el radar de precipitación y los gráficos horarios de temperatura y lluvia.
+      </div>
+    </section>
+
+    <footer>
+      METEO RADAR SANSE · Proyecto meteorológico independiente
+      <br>Datos generados por el sistema de predicción de San Sebastián de los Reyes
+    </footer>
+  </main>
+</body>
+</html>
