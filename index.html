@@ -63,9 +63,9 @@
     .stat-label { color:var(--muted); font-size:10px; }
     .stat-value { font-size:14px; font-weight:650; margin-top:4px; }
     .ecmwf { border-top:3px solid var(--blue); } .gfs { border-top:3px solid var(--green); } .arome { border-top:3px solid var(--purple); }
-    .chart-card { padding:18px; }
-    .chart-wrap { position:relative; height:330px; width:100%; }
-    canvas { width:100% !important; height:100% !important; }
+    .chart-card { padding:20px 20px 16px; }
+    .chart-wrap { position:relative; height:390px; width:100%; }
+    canvas { display:block; width:100% !important; height:100% !important; }
     .legend-note { color:var(--muted); font-size:11px; margin-top:8px; }
     .forecast { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
     .day { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:15px; padding:13px 10px; text-align:center; min-width:0; }
@@ -84,7 +84,8 @@
       .models { grid-template-columns:1fr; }
       .forecast { grid-template-columns:repeat(2,1fr); }
       .day:last-child { grid-column:span 2; }
-      .chart-wrap { height:290px; }
+      .chart-card { padding:13px 10px 12px; }
+      .chart-wrap { height:300px; }
     }
     @media (min-width:520px) and (max-width:760px) { .forecast { grid-template-columns:repeat(4,1fr); } .day:last-child { grid-column:auto; } }
   </style>
@@ -142,7 +143,7 @@
       <div class="section-head"><h2>Evolución meteorológica · próximas 48 h</h2><div class="hint">Temperatura y precipitación horaria</div></div>
       <div class="card chart-card">
         <div class="chart-wrap"><canvas id="evolutionChart" aria-label="Gráfico de evolución de temperatura y precipitación para las próximas 48 horas"></canvas></div>
-        <div class="legend-note">Líneas: temperatura prevista por ECMWF, GFS y AROME. Barras: precipitación horaria ECMWF. Si un modelo no dispone de un dato, el gráfico deja ese punto vacío.</div>
+        <div class="legend-note">Líneas: temperatura de ECMWF, GFS y AROME. Barras: precipitación horaria de los tres modelos. Cada serie se muestra solo durante las horas disponibles en su modelo.</div>
       </div>
     </section>
 
@@ -246,41 +247,59 @@
     }
     let chartInstance=null;
     function renderChart(data, now) {
-      const keys=Object.keys(MODEL_META), ref=hourly(data.models?.ecmwf);
+      const ref=hourly(data.models?.ecmwf);
       if (!ref) return;
       const ids=nextIndices(ref.time,now,48);
       if (!ids.length) return;
+      // Alinea los modelos por hora real, aunque sus horizontes sean distintos.
       const labels=ids.map(i=>dateLabel(ref.time[i],{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}));
+      const refTimes=ids.map(i=>new Date(ref.time[i]).getTime());
       const datasets=[];
-      keys.forEach(key=>{
-        const h=hourly(data.models?.[key]), meta=MODEL_META[key];
+      Object.entries(MODEL_META).forEach(([key,meta])=>{
+        const h=hourly(data.models?.[key]);
+        const timeIndex=new Map((h?.time||[]).map((t,i)=>[new Date(t).getTime(),i]));
         datasets.push({
-          type:"line", label:`${meta.title} · °C`, data:ids.map(i=>h?get(h.temperature_2m,i):null),
-          borderColor:meta.color, backgroundColor:meta.color, borderWidth:2.5, pointRadius:0,
-          pointHoverRadius:4, tension:.28, spanGaps:false, yAxisID:"y"
+          type:"line",label:`${meta.title} · °C`,
+          data:refTimes.map(ms=>{const i=timeIndex.get(ms);return h&&i!==undefined?get(h.temperature_2m,i):null;}),
+          borderColor:meta.color,backgroundColor:meta.color,borderWidth:2.8,
+          pointRadius:0,pointHoverRadius:4,pointHitRadius:10,tension:.28,
+          spanGaps:false,yAxisID:"y",order:1
         });
       });
-      datasets.push({
-        type:"bar", label:"Lluvia ECMWF · mm/h", data:ids.map(i=>get(ref.precipitation,i)),
-        backgroundColor:"rgba(56,189,248,.28)", borderColor:"rgba(56,189,248,.55)", borderWidth:1,
-        yAxisID:"y1", barPercentage:.72, categoryPercentage:.9
+      Object.entries(MODEL_META).forEach(([key,meta])=>{
+        const h=hourly(data.models?.[key]);
+        const timeIndex=new Map((h?.time||[]).map((t,i)=>[new Date(t).getTime(),i]));
+        const rgba=key==="ecmwf"?"rgba(56,189,248,.28)":key==="gfs"?"rgba(52,211,153,.25)":"rgba(167,139,250,.25)";
+        datasets.push({
+          type:"bar",label:`Precip. ${meta.title} · mm/h`,
+          data:refTimes.map(ms=>{const i=timeIndex.get(ms);return h&&i!==undefined?get(h.precipitation,i):null;}),
+          backgroundColor:rgba,borderColor:meta.color,borderWidth:1,
+          yAxisID:"y1",barPercentage:.62,categoryPercentage:.82,maxBarThickness:9,order:2
+        });
       });
-      const ctx=document.getElementById("evolutionChart").getContext("2d");
+      const canvas=document.getElementById("evolutionChart");
       if(chartInstance) chartInstance.destroy();
       if(typeof Chart==="undefined") {
         document.querySelector(".legend-note").textContent="No se ha podido cargar la librería del gráfico. Comprueba la conexión a Internet.";
         return;
       }
-      chartInstance=new Chart(ctx,{
+      chartInstance=new Chart(canvas.getContext("2d"),{
         data:{labels,datasets},
         options:{
-          responsive:true, maintainAspectRatio:false, interaction:{mode:"index",intersect:false},
-          plugins:{legend:{labels:{color:"#c5d5e6",usePointStyle:true,boxWidth:8,font:{size:11}}},
-            tooltip:{backgroundColor:"#0b1726",titleColor:"#fff",bodyColor:"#dbeafe",borderColor:"#38516c",borderWidth:1}},
+          responsive:true,maintainAspectRatio:false,
+          interaction:{mode:"index",intersect:false},
+          layout:{padding:{top:4,right:5,left:3,bottom:0}},
+          plugins:{
+            legend:{position:"top",labels:{
+              color:"#c5d5e6",usePointStyle:true,pointStyle:"circle",
+              boxWidth:8,boxHeight:8,padding:14,font:{size:window.innerWidth<600?9:11}
+            }},
+            tooltip:{backgroundColor:"#0b1726",titleColor:"#fff",bodyColor:"#dbeafe",borderColor:"#38516c",borderWidth:1,padding:11}
+          },
           scales:{
-            x:{ticks:{color:"#91a5bc",maxTicksLimit:9,maxRotation:0},grid:{color:"rgba(145,165,188,.08)"}},
-            y:{position:"left",title:{display:true,text:"Temperatura °C",color:"#91a5bc"},ticks:{color:"#91a5bc"},grid:{color:"rgba(145,165,188,.1)"}},
-            y1:{position:"right",beginAtZero:true,title:{display:true,text:"Precipitación mm/h",color:"#91a5bc"},ticks:{color:"#91a5bc"},grid:{drawOnChartArea:false}}
+            x:{ticks:{color:"#91a5bc",maxTicksLimit:window.innerWidth<600?6:10,maxRotation:0,minRotation:0,autoSkip:true,font:{size:window.innerWidth<600?9:10}},grid:{color:"rgba(145,165,188,.08)"}},
+            y:{position:"left",title:{display:true,text:"Temperatura °C",color:"#91a5bc"},ticks:{color:"#91a5bc",font:{size:10}},grid:{color:"rgba(145,165,188,.1)"}},
+            y1:{position:"right",beginAtZero:true,title:{display:true,text:"Precipitación mm/h",color:"#91a5bc"},ticks:{color:"#91a5bc",font:{size:10}},grid:{drawOnChartArea:false}}
           }
         }
       });
