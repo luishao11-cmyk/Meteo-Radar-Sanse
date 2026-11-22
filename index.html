@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#08111f">
+  <meta name="description" content="Meteo Radar Sanse: previsión meteorológica multimodelo para San Sebastián de los Reyes.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Meteo Radar">
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
   <title>Meteo Radar Sanse</title>
   <style>
     :root {
@@ -402,5 +410,16 @@
     // Refresca el JSON cada 10 minutos sin almacenar una copia en caché.
     setInterval(loadData,10*60*1000);
   </script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./service-worker.js", {
+        scope: "./"
+      }).catch(error => {
+        console.error("Error registrando la aplicación:", error);
+      });
+    });
+  }
+</script>
 </body>
 </html>
