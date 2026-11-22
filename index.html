@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,273 +11,327 @@
       --bg: #08111f;
       --panel: #111e30;
       --panel2: #17263a;
-      --text: #edf4ff;
-      --muted: #91a4bd;
-      --cyan: #48d8ef;
-      --blue: #579cff;
-      --purple: #b58aff;
-      --border: #263950;
+      --line: #263950;
+      --text: #e8f1fb;
+      --muted: #91a5bc;
+      --cyan: #38bdf8;
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+      --green: #34d399;
+      --orange: #fbbf24;
+      --red: #fb7185;
+      --shadow: 0 16px 40px rgba(0,0,0,.22);
     }
-
     * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      background:
-        radial-gradient(ellipse at 50% -20%, #193b5a 0, transparent 55%),
-        var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
+      margin: 0; min-height: 100vh; color: var(--text);
+      background: radial-gradient(ellipse at top left, #132b45 0, transparent 42%), var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-
-    .container {
-      width: min(1100px, 100%);
-      margin: auto;
-      padding: 22px 18px 50px;
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 26px 0 36px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .logo { width:48px; height:48px; display:grid; place-items:center; border-radius:15px; background:linear-gradient(145deg,#164e70,#1d3a68); font-size:25px; box-shadow:var(--shadow); }
+    h1 { margin:0; font-size:clamp(19px,3vw,27px); letter-spacing:.08em; }
+    .sub { color:var(--muted); font-size:12px; margin-top:4px; letter-spacing:.12em; }
+    .status { border:1px solid var(--line); background:rgba(17,30,48,.8); border-radius:999px; padding:8px 12px; color:var(--muted); font-size:12px; white-space:nowrap; }
+    .status.ok { color:#a7f3d0; border-color:#17634e; }
+    .status.error { color:#fecdd3; border-color:#7f1d1d; }
+    .hero { background:linear-gradient(120deg,rgba(20,54,82,.92),rgba(17,30,48,.96)); border:1px solid #24425f; border-radius:22px; padding:22px; box-shadow:var(--shadow); margin-bottom:18px; }
+    .hero-top { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+    .eyebrow { color:var(--cyan); text-transform:uppercase; letter-spacing:.15em; font-size:11px; font-weight:800; }
+    .place { font-size:clamp(22px,4vw,31px); font-weight:750; margin:7px 0 5px; }
+    .coords { color:var(--muted); font-size:12px; }
+    .updated { color:var(--muted); font-size:12px; text-align:right; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; }
+    .metric { background:rgba(8,17,31,.48); border:1px solid rgba(119,166,204,.17); border-radius:16px; padding:15px; min-width:0; }
+    .metric .label { color:var(--muted); font-size:12px; }
+    .metric .value { font-size:clamp(22px,3.5vw,31px); font-weight:750; margin-top:7px; }
+    .metric .detail { color:var(--muted); font-size:11px; margin-top:4px; }
+    .section { margin-top:20px; }
+    .section-head { display:flex; align-items:end; justify-content:space-between; gap:12px; margin:0 2px 11px; }
+    h2 { font-size:17px; margin:0; letter-spacing:.01em; }
+    .hint { color:var(--muted); font-size:11px; }
+    .models { display:grid; grid-template-columns:repeat(3,1fr); gap:13px; }
+    .card { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:18px; padding:17px; box-shadow:var(--shadow); min-width:0; }
+    .model-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .model-name { font-weight:800; letter-spacing:.08em; }
+    .model-tag { font-size:10px; color:var(--muted); border:1px solid var(--line); padding:4px 7px; border-radius:999px; }
+    .model-temp { font-size:27px; font-weight:750; margin:15px 0 4px; }
+    .model-desc { color:var(--muted); font-size:12px; }
+    .model-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:15px; padding-top:13px; border-top:1px solid var(--line); }
+    .stat-label { color:var(--muted); font-size:10px; }
+    .stat-value { font-size:14px; font-weight:650; margin-top:4px; }
+    .ecmwf { border-top:3px solid var(--blue); } .gfs { border-top:3px solid var(--green); } .arome { border-top:3px solid var(--purple); }
+    .chart-card { padding:18px; }
+    .chart-wrap { position:relative; height:330px; width:100%; }
+    canvas { width:100% !important; height:100% !important; }
+    .legend-note { color:var(--muted); font-size:11px; margin-top:8px; }
+    .forecast { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+    .day { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:15px; padding:13px 10px; text-align:center; min-width:0; }
+    .day-name { color:var(--muted); font-size:11px; font-weight:700; }
+    .day-icon { font-size:25px; margin:11px 0; }
+    .day-range { font-weight:750; font-size:14px; white-space:nowrap; }
+    .day-rain { color:#93c5fd; font-size:11px; margin-top:9px; line-height:1.55; }
+    .radar-placeholder { display:flex; align-items:center; justify-content:center; min-height:150px; text-align:center; color:var(--muted); background:repeating-linear-gradient(135deg,rgba(56,189,248,.035) 0 10px,transparent 10px 20px),#0b1929; border:1px dashed #31516e; border-radius:14px; padding:22px; }
+    footer { color:#71869d; font-size:11px; text-align:center; margin-top:25px; line-height:1.7; }
+    .error-box { display:none; margin-top:14px; border:1px solid #7f1d1d; background:#3a1720; color:#fecdd3; border-radius:12px; padding:12px; font-size:12px; }
+    @media (max-width:760px) {
+      .wrap { width:min(100% - 22px, 620px); padding-top:17px; }
+      header { align-items:flex-start; } .status { font-size:10px; padding:7px 9px; }
+      .hero { padding:17px; } .hero-top { flex-direction:column; } .updated { text-align:left; }
+      .metrics { grid-template-columns:repeat(2,1fr); gap:9px; }
+      .models { grid-template-columns:1fr; }
+      .forecast { grid-template-columns:repeat(2,1fr); }
+      .day:last-child { grid-column:span 2; }
+      .chart-wrap { height:290px; }
     }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
-      padding: 12px 0 25px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo {
-      width: 45px;
-      height: 45px;
-      display: grid;
-      place-items: center;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #167caa, #6049a6);
-      font-size: 24px;
-    }
-
-    h1 { font-size: 21px; margin: 0; letter-spacing: .3px; }
-    .subtitle { color: var(--muted); font-size: 12px; margin-top: 4px; }
-
-    .status {
-      color: #6de0a5;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .eyebrow {
-      color: var(--cyan);
-      font-size: 11px;
-      font-weight: 750;
-      letter-spacing: 1.7px;
-      text-transform: uppercase;
-    }
-
-    .hero {
-      padding: 30px 0 22px;
-    }
-
-    .hero h2 {
-      font-size: clamp(25px, 5vw, 38px);
-      margin: 8px 0;
-    }
-
-    .hero p { color: var(--muted); margin: 0; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-
-    .card {
-      background: linear-gradient(145deg, var(--panel2), var(--panel));
-      border: 1px solid var(--border);
-      border-radius: 17px;
-      padding: 17px;
-      min-width: 0;
-    }
-
-    .metric-label { color: var(--muted); font-size: 12px; }
-    .metric-value { font-size: 27px; font-weight: 750; margin-top: 9px; }
-    .metric-note { color: var(--muted); font-size: 11px; margin-top: 5px; }
-
-    section { margin-top: 30px; }
-    .section-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 13px;
-    }
-
-    h3 { margin: 0; font-size: 17px; }
-    .tag { color: var(--muted); font-size: 11px; }
-
-    .models {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .model-name { font-size: 14px; font-weight: 750; }
-    .model-value { font-size: 30px; font-weight: 750; margin: 14px 0 4px; }
-    .ecmwf { border-top: 3px solid var(--cyan); }
-    .gfs { border-top: 3px solid var(--blue); }
-    .arome { border-top: 3px solid var(--purple); }
-    .model-detail { color: var(--muted); font-size: 12px; }
-
-    .forecast {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-    }
-
-    .day {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      padding: 13px 5px;
-      text-align: center;
-    }
-
-    .day-name { font-size: 11px; color: var(--muted); }
-    .day-icon { font-size: 22px; margin: 10px 0; }
-    .day-temp { font-size: 13px; font-weight: 700; }
-    .day-rain { color: var(--cyan); font-size: 10px; margin-top: 7px; }
-
-    .notice {
-      background: #101e30;
-      border: 1px dashed #38516d;
-      color: var(--muted);
-      border-radius: 14px;
-      padding: 17px;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    footer {
-      margin-top: 35px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 11px;
-      text-align: center;
-    }
-
-    @media (max-width: 650px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
-      .models { grid-template-columns: 1fr; }
-      .forecast { grid-template-columns: repeat(4, 1fr); }
-      header { align-items: flex-start; }
-      .status { font-size: 10px; }
-    }
+    @media (min-width:520px) and (max-width:760px) { .forecast { grid-template-columns:repeat(4,1fr); } .day:last-child { grid-column:auto; } }
   </style>
 </head>
 <body>
-  <main class="container">
+  <main class="wrap">
     <header>
       <div class="brand">
         <div class="logo">🌦️</div>
-        <div>
-          <h1>METEO RADAR SANSE</h1>
-          <div class="subtitle">Estación meteorológica · San Sebastián de los Reyes</div>
-        </div>
+        <div><h1>METEO RADAR SANSE</h1><div class="sub">PREVISIÓN MULTIMODELO · SANSE</div></div>
       </div>
-      <div class="status">● SISTEMA ACTIVO</div>
+      <div id="status" class="status">Cargando datos…</div>
     </header>
 
-    <div class="hero">
-      <div class="eyebrow">Panel meteorológico</div>
-      <h2>San Sebastián de los Reyes</h2>
-      <p>Madrid · 40.5479° N · 3.6262° O</p>
-    </div>
-
-    <section>
-      <div class="section-heading">
-        <h3>Situación actual</h3>
-        <span class="tag">Datos pendientes de conexión</span>
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">Ubicación de referencia</div>
+          <div class="place" id="locationName">San Sebastián de los Reyes</div>
+          <div class="coords" id="coordinates">40.5479° N · 3.6262° O · 670 m</div>
+        </div>
+        <div class="updated" id="updatedAt">Esperando radar.json</div>
       </div>
-      <div class="grid">
-        <div class="card">
-          <div class="metric-label">Temperatura</div>
-          <div class="metric-value" id="temperature">-- °C</div>
-          <div class="metric-note">A 2 metros</div>
-        </div>
-        <div class="card">
-          <div class="metric-label">Sensación térmica</div>
-          <div class="metric-value" id="feels">-- °C</div>
-          <div class="metric-note">Sensación exterior</div>
-        </div>
-        <div class="card">
-          <div class="metric-label">Viento</div>
-          <div class="metric-value" id="wind">-- km/h</div>
-          <div class="metric-note">Velocidad actual</div>
-        </div>
-        <div class="card">
-          <div class="metric-label">Humedad</div>
-          <div class="metric-value" id="humidity">-- %</div>
-          <div class="metric-note">Humedad relativa</div>
-        </div>
+      <div class="metrics">
+        <div class="metric"><div class="label">🌡️ Temperatura</div><div class="value" id="temperature">—</div><div class="detail" id="weatherText">Situación estimada por modelo</div></div>
+        <div class="metric"><div class="label">🤗 Sensación térmica</div><div class="value" id="feels">—</div><div class="detail">Modelo ECMWF</div></div>
+        <div class="metric"><div class="label">💨 Viento</div><div class="value" id="wind">—</div><div class="detail" id="windDirection">Velocidad a 10 m</div></div>
+        <div class="metric"><div class="label">💧 Humedad</div><div class="value" id="humidity">—</div><div class="detail">Humedad relativa</div></div>
       </div>
+      <div id="errorBox" class="error-box"></div>
     </section>
 
-    <section>
-      <div class="section-heading">
-        <h3>Comparativa de modelos</h3>
-        <span class="tag">Tres fuentes independientes</span>
-      </div>
+    <section class="section">
+      <div class="section-head"><h2>Comparación de modelos</h2><div class="hint">Última hora disponible · datos modelizados</div></div>
       <div class="models">
-        <div class="card ecmwf">
-          <div class="model-name">ECMWF</div>
-          <div class="model-value" id="ecmwf">-- °C</div>
-          <div class="model-detail">Modelo europeo</div>
-        </div>
-        <div class="card gfs">
-          <div class="model-name">GFS</div>
-          <div class="model-value" id="gfs">-- °C</div>
-          <div class="model-detail">Modelo americano</div>
-        </div>
-        <div class="card arome">
-          <div class="model-name">AROME</div>
-          <div class="model-value" id="arome">-- °C</div>
-          <div class="model-detail">Alta resolución · Francia</div>
-        </div>
+        <article class="card ecmwf" id="ecmwf">
+          <div class="model-head"><div class="model-name" style="color:var(--blue)">ECMWF</div><div class="model-tag">IFS 0.25°</div></div>
+          <div class="model-temp" data-field="temp">—</div><div class="model-desc" data-field="description">Esperando datos</div>
+          <div class="model-stats"><div><div class="stat-label">Lluvia</div><div class="stat-value" data-field="rain">—</div></div><div><div class="stat-label">Prob. lluvia</div><div class="stat-value" data-field="prob">—</div></div><div><div class="stat-label">Viento</div><div class="stat-value" data-field="wind">—</div></div><div><div class="stat-label">Humedad</div><div class="stat-value" data-field="humidity">—</div></div></div>
+        </article>
+        <article class="card gfs" id="gfs">
+          <div class="model-head"><div class="model-name" style="color:var(--green)">GFS</div><div class="model-tag">NOAA</div></div>
+          <div class="model-temp" data-field="temp">—</div><div class="model-desc" data-field="description">Esperando datos</div>
+          <div class="model-stats"><div><div class="stat-label">Lluvia</div><div class="stat-value" data-field="rain">—</div></div><div><div class="stat-label">Prob. lluvia</div><div class="stat-value" data-field="prob">—</div></div><div><div class="stat-label">Viento</div><div class="stat-value" data-field="wind">—</div></div><div><div class="stat-label">Humedad</div><div class="stat-value" data-field="humidity">—</div></div></div>
+        </article>
+        <article class="card arome" id="arome">
+          <div class="model-head"><div class="model-name" style="color:var(--purple)">AROME</div><div class="model-tag">MÉTÉO-FRANCE HD</div></div>
+          <div class="model-temp" data-field="temp">—</div><div class="model-desc" data-field="description">Esperando datos</div>
+          <div class="model-stats"><div><div class="stat-label">Lluvia</div><div class="stat-value" data-field="rain">—</div></div><div><div class="stat-label">Prob. lluvia</div><div class="stat-value" data-field="prob">—</div></div><div><div class="stat-label">Viento</div><div class="stat-value" data-field="wind">—</div></div><div><div class="stat-label">Humedad</div><div class="stat-value" data-field="humidity">—</div></div></div>
+        </article>
       </div>
     </section>
 
-    <section>
-      <div class="section-heading">
-        <h3>Previsión próximos 7 días</h3>
-        <span class="tag">Sanse</span>
-      </div>
-      <div class="forecast" id="forecast">
-        <div class="notice" style="grid-column:1/-1">
-          La previsión aparecerá aquí cuando conectemos el archivo radar.json.
-        </div>
+    <section class="section">
+      <div class="section-head"><h2>Evolución meteorológica · próximas 48 h</h2><div class="hint">Temperatura y precipitación horaria</div></div>
+      <div class="card chart-card">
+        <div class="chart-wrap"><canvas id="evolutionChart" aria-label="Gráfico de evolución de temperatura y precipitación para las próximas 48 horas"></canvas></div>
+        <div class="legend-note">Líneas: temperatura prevista por ECMWF, GFS y AROME. Barras: precipitación horaria ECMWF. Si un modelo no dispone de un dato, el gráfico deja ese punto vacío.</div>
       </div>
     </section>
 
-    <section>
-      <div class="section-heading">
-        <h3>Radar y evolución meteorológica</h3>
-      </div>
-      <div class="notice">
-        <strong>RADAR METEOROLÓGICO</strong><br>
-        Zona preparada para incorporar el radar de precipitación y los gráficos horarios de temperatura y lluvia.
+    <section class="section">
+      <div class="section-head"><h2>Previsión de 7 días</h2><div class="hint">Resumen diario · ECMWF como referencia</div></div>
+      <div id="forecast" class="forecast"><div class="day">Cargando previsión…</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Radar y evolución meteorológica</h2><div class="hint">Módulo de radar en preparación</div></div>
+      <div class="card">
+        <div class="radar-placeholder">📡<br><br>Este espacio queda reservado para integrar el radar de precipitación y su evolución.<br>La previsión multimodelo ya se carga desde <strong>data/radar.json</strong>.</div>
       </div>
     </section>
 
     <footer>
-      METEO RADAR SANSE · Proyecto meteorológico independiente
-      <br>Datos generados por el sistema de predicción de San Sebastián de los Reyes
+      METEO RADAR SANSE · San Sebastián de los Reyes (Madrid)<br>
+      Datos de previsión modelizada. No son observaciones de una estación meteorológica ni sustituyen los avisos oficiales de AEMET.<br>
+      <span id="sourceInfo">Fuente de datos: radar.json</span>
     </footer>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    const DATA_URL = "./data/radar.json";
+    const MODEL_META = {
+      ecmwf: { title: "ECMWF", color: "#60a5fa", card: "ecmwf" },
+      gfs:   { title: "GFS", color: "#34d399", card: "gfs" },
+      arome: { title: "AROME", color: "#a78bfa", card: "arome" }
+    };
+    const WEATHER = {
+      0:["☀️","Despejado"], 1:["🌤️","Mayormente despejado"], 2:["⛅","Parcialmente nuboso"], 3:["☁️","Cubierto"],
+      45:["🌫️","Niebla"], 48:["🌫️","Niebla engelante"], 51:["🌦️","Llovizna débil"], 53:["🌦️","Llovizna"], 55:["🌧️","Llovizna intensa"],
+      56:["🌧️","Llovizna engelante"], 57:["🌧️","Llovizna engelante intensa"], 61:["🌧️","Lluvia débil"], 63:["🌧️","Lluvia"], 65:["🌧️","Lluvia intensa"],
+      66:["🌧️","Lluvia engelante"], 67:["🌧️","Lluvia engelante intensa"], 71:["🌨️","Nieve débil"], 73:["❄️","Nieve"], 75:["❄️","Nevada intensa"],
+      77:["🌨️","Granos de nieve"], 80:["🌦️","Chubascos débiles"], 81:["🌧️","Chubascos"], 82:["🌧️","Chubascos fuertes"],
+      85:["🌨️","Chubascos de nieve"], 86:["❄️","Nevadas fuertes"], 95:["⛈️","Tormenta"], 96:["⛈️","Tormenta con granizo"], 99:["⛈️","Tormenta fuerte con granizo"]
+    };
+    const valid = v => v !== null && v !== undefined && Number.isFinite(Number(v));
+    const fmt = (v, digits=1, suffix="") => valid(v) ? `${Number(v).toFixed(digits)}${suffix}` : "—";
+    const get = (arr, i) => Array.isArray(arr) && i < arr.length ? arr[i] : null;
+    const hourly = m => m && m.hourly && Array.isArray(m.hourly.time) ? m.hourly : null;
+    const daily = m => m && m.daily && Array.isArray(m.daily.time) ? m.daily : null;
+    const weatherInfo = code => valid(code) && WEATHER[Number(code)] ? WEATHER[Number(code)] : ["🌡️","Sin descripción"];
+    function nearestIndex(times, now) {
+      if (!Array.isArray(times) || !times.length) return -1;
+      let best = -1, delta = Infinity;
+      times.forEach((t,i) => { const d = Math.abs(new Date(t).getTime() - now.getTime()); if (Number.isFinite(d) && d < delta) { delta=d; best=i; } });
+      return best;
+    }
+    function nextIndices(times, now, hours=48) {
+      if (!Array.isArray(times)) return [];
+      const end = now.getTime() + hours*3600000;
+      let ids = times.map((t,i)=>({i,ms:new Date(t).getTime()})).filter(x=>Number.isFinite(x.ms) && x.ms >= now.getTime()-3600000 && x.ms <= end);
+      if (!ids.length) {
+        const start = nearestIndex(times, now);
+        if (start >= 0) ids = times.slice(start, start+hours).map((_,k)=>({i:start+k,ms:new Date(times[start+k]).getTime()}));
+      }
+      return ids.map(x=>x.i);
+    }
+    function dateLabel(value, options={weekday:"short",day:"numeric",month:"short"}) {
+      const d = new Date(value + (value.length===10 ? "T12:00:00" : ""));
+      return Number.isNaN(d.getTime()) ? value : new Intl.DateTimeFormat("es-ES",options).format(d);
+    }
+    function setStatus(text, type="") {
+      const el=document.getElementById("status"); el.textContent=text; el.className="status"+(type?" "+type:"");
+    }
+    function renderCurrent(data) {
+      const e = data.models?.ecmwf, h = hourly(e), now = new Date();
+      if (!h) throw new Error("El JSON no contiene datos horarios ECMWF.");
+      let i = nearestIndex(h.time, now);
+      if (i < 0) throw new Error("No se han encontrado horas válidas en el modelo ECMWF.");
+      const temp=get(h.temperature_2m,i), feels=get(h.apparent_temperature,i), wind=get(h.wind_speed_10m,i);
+      const humidity=get(h.relative_humidity_2m,i), direction=get(h.wind_direction_10m,i), code=get(h.weather_code,i);
+      document.getElementById("temperature").textContent=fmt(temp,1,"°");
+      document.getElementById("feels").textContent=fmt(feels,1,"°");
+      document.getElementById("wind").textContent=fmt(wind,1," km/h");
+      document.getElementById("humidity").textContent=fmt(humidity,0,"%");
+      const info=weatherInfo(code);
+      document.getElementById("weatherText").textContent=info[0]+" "+info[1]+" · estimación ECMWF";
+      document.getElementById("windDirection").textContent=valid(direction)?`Dirección ${Math.round(Number(direction))}° · velocidad a 10 m`:"Velocidad a 10 m";
+    }
+    function renderModels(data, now) {
+      Object.entries(MODEL_META).forEach(([key,meta])=>{
+        const model=data.models?.[key], h=hourly(model), card=document.getElementById(meta.card);
+        if (!model || model.status!=="ok" || !h) {
+          card.querySelector('[data-field="description"]').textContent="Modelo no disponible";
+          return;
+        }
+        const i=nearestIndex(h.time,now);
+        const temp=get(h.temperature_2m,i), code=get(h.weather_code,i), rain=get(h.precipitation,i);
+        const prob=get(h.precipitation_probability,i), wind=get(h.wind_speed_10m,i), humidity=get(h.relative_humidity_2m,i);
+        card.querySelector('[data-field="temp"]').textContent=fmt(temp,1,"°");
+        const info=weatherInfo(code);
+        card.querySelector('[data-field="description"]').textContent=info[0]+" "+info[1];
+        card.querySelector('[data-field="rain"]').textContent=fmt(rain,1," mm");
+        card.querySelector('[data-field="prob"]').textContent=fmt(prob,0,"%");
+        card.querySelector('[data-field="wind"]').textContent=fmt(wind,1," km/h");
+        card.querySelector('[data-field="humidity"]').textContent=fmt(humidity,0,"%");
+      });
+    }
+    let chartInstance=null;
+    function renderChart(data, now) {
+      const keys=Object.keys(MODEL_META), ref=hourly(data.models?.ecmwf);
+      if (!ref) return;
+      const ids=nextIndices(ref.time,now,48);
+      if (!ids.length) return;
+      const labels=ids.map(i=>dateLabel(ref.time[i],{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}));
+      const datasets=[];
+      keys.forEach(key=>{
+        const h=hourly(data.models?.[key]), meta=MODEL_META[key];
+        datasets.push({
+          type:"line", label:`${meta.title} · °C`, data:ids.map(i=>h?get(h.temperature_2m,i):null),
+          borderColor:meta.color, backgroundColor:meta.color, borderWidth:2.5, pointRadius:0,
+          pointHoverRadius:4, tension:.28, spanGaps:false, yAxisID:"y"
+        });
+      });
+      datasets.push({
+        type:"bar", label:"Lluvia ECMWF · mm/h", data:ids.map(i=>get(ref.precipitation,i)),
+        backgroundColor:"rgba(56,189,248,.28)", borderColor:"rgba(56,189,248,.55)", borderWidth:1,
+        yAxisID:"y1", barPercentage:.72, categoryPercentage:.9
+      });
+      const ctx=document.getElementById("evolutionChart").getContext("2d");
+      if(chartInstance) chartInstance.destroy();
+      if(typeof Chart==="undefined") {
+        document.querySelector(".legend-note").textContent="No se ha podido cargar la librería del gráfico. Comprueba la conexión a Internet.";
+        return;
+      }
+      chartInstance=new Chart(ctx,{
+        data:{labels,datasets},
+        options:{
+          responsive:true, maintainAspectRatio:false, interaction:{mode:"index",intersect:false},
+          plugins:{legend:{labels:{color:"#c5d5e6",usePointStyle:true,boxWidth:8,font:{size:11}}},
+            tooltip:{backgroundColor:"#0b1726",titleColor:"#fff",bodyColor:"#dbeafe",borderColor:"#38516c",borderWidth:1}},
+          scales:{
+            x:{ticks:{color:"#91a5bc",maxTicksLimit:9,maxRotation:0},grid:{color:"rgba(145,165,188,.08)"}},
+            y:{position:"left",title:{display:true,text:"Temperatura °C",color:"#91a5bc"},ticks:{color:"#91a5bc"},grid:{color:"rgba(145,165,188,.1)"}},
+            y1:{position:"right",beginAtZero:true,title:{display:true,text:"Precipitación mm/h",color:"#91a5bc"},ticks:{color:"#91a5bc"},grid:{drawOnChartArea:false}}
+          }
+        }
+      });
+    }
+    function renderForecast(data, now) {
+      const d=daily(data.models?.ecmwf), container=document.getElementById("forecast");
+      if(!d) { container.innerHTML='<div class="day">No hay datos diarios disponibles.</div>'; return; }
+      const today=now.toISOString().slice(0,10);
+      let ids=d.time.map((t,i)=>({t,i})).filter(x=>x.t>=today).slice(0,7);
+      if(!ids.length) ids=d.time.map((t,i)=>({t,i})).slice(-7);
+      container.innerHTML=ids.map(({t,i})=>{
+        const info=weatherInfo(get(d.weather_code,i));
+        const max=get(d.temperature_2m_max,i), min=get(d.temperature_2m_min,i);
+        const rain=get(d.precipitation_sum,i), prob=get(d.precipitation_probability_max,i);
+        return `<article class="day">
+          <div class="day-name">${dateLabel(t,{weekday:"short",day:"numeric",month:"short"})}</div>
+          <div class="day-icon" title="${info[1]}">${info[0]}</div>
+          <div class="day-range">${fmt(max,0,"°")} / ${fmt(min,0,"°")}</div>
+          <div class="day-rain">☔ ${fmt(rain,1," mm")}<br>Prob. ${fmt(prob,0,"%")}</div>
+        </article>`;
+      }).join("");
+    }
+    async function loadData() {
+      setStatus("Cargando datos…");
+      try {
+        const response=await fetch(DATA_URL,{cache:"no-store"});
+        if(!response.ok) throw new Error(`No se pudo leer ${DATA_URL} (HTTP ${response.status}).`);
+        const data=await response.json();
+        if(!data || !data.models) throw new Error("El archivo JSON no tiene la estructura esperada.");
+        const loc=data.location||{};
+        document.getElementById("locationName").textContent=loc.name||"San Sebastián de los Reyes";
+        if(valid(loc.latitude)&&valid(loc.longitude)) {
+          document.getElementById("coordinates").textContent=`${Number(loc.latitude).toFixed(4)}° N · ${Math.abs(Number(loc.longitude)).toFixed(4)}° O · ${fmt(loc.elevation,0," m")}`;
+        }
+        const now=new Date();
+        renderCurrent(data); renderModels(data,now); renderChart(data,now); renderForecast(data,now);
+        const generated=data.generated_at?new Date(data.generated_at):null;
+        const generatedText=generated&&!Number.isNaN(generated.getTime())?new Intl.DateTimeFormat("es-ES",{dateStyle:"short",timeStyle:"short"}).format(generated):"fecha no disponible";
+        document.getElementById("updatedAt").textContent=`Datos generados: ${generatedText}`;
+        document.getElementById("sourceInfo").textContent=`Fuente: data/radar.json · ${data.summary?.models_available??"—"} de ${data.summary?.models_requested??"—"} modelos disponibles`;
+        setStatus("Datos cargados","ok");
+        document.getElementById("errorBox").style.display="none";
+      } catch(error) {
+        console.error(error); setStatus("Error de datos","error");
+        const box=document.getElementById("errorBox"); box.style.display="block";
+        box.textContent=`No se han podido cargar los datos meteorológicos. ${error.message} Comprueba que index.html está en la raíz y que radar.json está dentro de la carpeta data.`;
+      }
+    }
+    loadData();
+    // Refresca el JSON cada 10 minutos sin almacenar una copia en caché.
+    setInterval(loadData,10*60*1000);
+  </script>
 </body>
 </html>
