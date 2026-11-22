@@ -64,7 +64,7 @@
     .stat-value { font-size:14px; font-weight:650; margin-top:4px; }
     .ecmwf { border-top:3px solid var(--blue); } .gfs { border-top:3px solid var(--green); } .arome { border-top:3px solid var(--purple); }
     .chart-card { padding:20px 20px 16px; }
-    .chart-wrap { position:relative; height:390px; width:100%; }
+    .chart-wrap { position:relative; height:455px; width:100%; }
     canvas { display:block; width:100% !important; height:100% !important; }
     .legend-note { color:var(--muted); font-size:11px; margin-top:8px; }
     .forecast { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
@@ -73,7 +73,18 @@
     .day-icon { font-size:25px; margin:11px 0; }
     .day-range { font-weight:750; font-size:14px; white-space:nowrap; }
     .day-rain { color:#93c5fd; font-size:11px; margin-top:9px; line-height:1.55; }
-    .radar-placeholder { display:flex; align-items:center; justify-content:center; min-height:150px; text-align:center; color:var(--muted); background:repeating-linear-gradient(135deg,rgba(56,189,248,.035) 0 10px,transparent 10px 20px),#0b1929; border:1px dashed #31516e; border-radius:14px; padding:22px; }
+    .rain-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:13px; }
+    .rain-model { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:16px; padding:16px; min-width:0; }
+    .rain-model.ecmwf { border-top:3px solid var(--blue); } .rain-model.gfs { border-top:3px solid var(--green); } .rain-model.arome { border-top:3px solid var(--purple); }
+    .rain-model-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:13px; }
+    .rain-model-name { font-weight:800; letter-spacing:.07em; }
+    .rain-window { color:var(--muted); font-size:10px; border:1px solid var(--line); border-radius:999px; padding:4px 7px; }
+    .rain-values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 9px; }
+    .rain-stat-label { color:var(--muted); font-size:10px; }
+    .rain-stat-value { font-size:20px; font-weight:750; margin-top:4px; }
+    .rain-model-note { color:var(--muted); font-size:10px; line-height:1.5; margin-top:13px; padding-top:10px; border-top:1px solid var(--line); }
+    .rain-footnote { color:var(--muted); font-size:11px; line-height:1.6; margin:12px 2px 0; }
+    @media (max-width:760px) { .rain-grid { grid-template-columns:1fr; } .rain-model { padding:14px; } .rain-stat-value { font-size:19px; } }
     footer { color:#71869d; font-size:11px; text-align:center; margin-top:25px; line-height:1.7; }
     .error-box { display:none; margin-top:14px; border:1px solid #7f1d1d; background:#3a1720; color:#fecdd3; border-radius:12px; padding:12px; font-size:12px; }
     @media (max-width:760px) {
@@ -85,7 +96,7 @@
       .forecast { grid-template-columns:repeat(2,1fr); }
       .day:last-child { grid-column:span 2; }
       .chart-card { padding:13px 10px 12px; }
-      .chart-wrap { height:300px; }
+      .chart-wrap { height:335px; }
     }
     @media (min-width:520px) and (max-width:760px) { .forecast { grid-template-columns:repeat(4,1fr); } .day:last-child { grid-column:auto; } }
   </style>
@@ -153,10 +164,11 @@
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Radar y evolución meteorológica</h2><div class="hint">Módulo de radar en preparación</div></div>
-      <div class="card">
-        <div class="radar-placeholder">📡<br><br>Este espacio queda reservado para integrar el radar de precipitación y su evolución.<br>La previsión multimodelo ya se carga desde <strong>data/radar.json</strong>.</div>
+      <div class="section-head"><h2>Análisis de lluvia y nieve</h2><div class="hint">Comparativa multimodelo · próximas 24 y 48 h</div></div>
+      <div id="rainAnalysis" class="rain-grid">
+        <article class="rain-model"><div class="rain-model-head"><span class="rain-model-name">Cargando análisis…</span></div><div class="rain-model-note">Calculando acumulados a partir de data/radar.json.</div></article>
       </div>
+      <div class="rain-footnote">Acumulados calculados sumando las previsiones horarias de cada modelo. La nieve se expresa en cm. Los datos solo se muestran hasta donde cada modelo ofrece valores válidos; no se extrapolan horas ausentes.</div>
     </section>
 
     <footer>
@@ -274,7 +286,7 @@
           type:"bar",label:`Precip. ${meta.title} · mm/h`,
           data:refTimes.map(ms=>{const i=timeIndex.get(ms);return h&&i!==undefined?get(h.precipitation,i):null;}),
           backgroundColor:rgba,borderColor:meta.color,borderWidth:1,
-          yAxisID:"y1",barPercentage:.62,categoryPercentage:.82,maxBarThickness:9,order:2
+          yAxisID:"y1",barPercentage:.78,categoryPercentage:.90,maxBarThickness:13,minBarLength:2,borderRadius:2,order:2
         });
       });
       const canvas=document.getElementById("evolutionChart");
@@ -303,6 +315,44 @@
           }
         }
       });
+    }
+    function renderRainAnalysis(data, now) {
+      const container=document.getElementById("rainAnalysis");
+      const base=hourly(data.models?.ecmwf);
+      if(!base) { container.innerHTML='<article class="rain-model"><div class="rain-model-note">No hay horas de referencia para calcular los acumulados.</div></article>'; return; }
+      const reference=nextIndices(base.time,now,48).map(i=>new Date(base.time[i]).getTime());
+      const cards=Object.entries(MODEL_META).map(([key,meta])=>{
+        const model=data.models?.[key], h=hourly(model);
+        if(!model || model.status!=="ok" || !h) return `<article class="rain-model ${meta.card}"><div class="rain-model-head"><span class="rain-model-name">${meta.title}</span></div><div class="rain-model-note">Modelo no disponible en esta actualización.</div></article>`;
+        const index=new Map(h.time.map((t,i)=>[new Date(t).getTime(),i]));
+        const values=reference.map(ms=>index.has(ms)?index.get(ms):-1);
+        const summarize=hours=>{
+          const selected=values.slice(0,hours);
+          const rain=selected.reduce((sum,i)=>sum+(i>=0&&valid(get(h.precipitation,i))?Number(get(h.precipitation,i)):0),0);
+          const snow=selected.reduce((sum,i)=>sum+(i>=0&&valid(get(h.snowfall,i))?Number(get(h.snowfall,i)):0),0);
+          const rainKnown=selected.some(i=>i>=0&&valid(get(h.precipitation,i)));
+          const snowKnown=selected.some(i=>i>=0&&valid(get(h.snowfall,i)));
+          const probs=selected.map(i=>i>=0?get(h.precipitation_probability,i):null).filter(valid).map(Number);
+          const peak=selected.map(i=>i>=0?get(h.precipitation,i):null).filter(valid).map(Number);
+          return {rain:rainKnown?rain:null,snow:snowKnown?snow:null,prob:probs.length?Math.max(...probs):null,peak:peak.length?Math.max(...peak):null,count:selected.filter(i=>i>=0).length};
+        };
+        const a=summarize(24), b=summarize(48);
+        const available=values.filter(i=>i>=0).length;
+        const stat=(label,value)=>`<div><div class="rain-stat-label">${label}</div><div class="rain-stat-value">${value}</div></div>`;
+        return `<article class="rain-model ${meta.card}">
+          <div class="rain-model-head"><span class="rain-model-name" style="color:${meta.color}">${meta.title}</span><span class="rain-window">${available} h disponibles</span></div>
+          <div class="rain-values">
+            ${stat('Lluvia · 24 h',fmt(a.rain,1,' mm'))}
+            ${stat('Lluvia · 48 h',fmt(b.rain,1,' mm'))}
+            ${stat('Nieve · 24 h',fmt(a.snow,1,' cm'))}
+            ${stat('Nieve · 48 h',fmt(b.snow,1,' cm'))}
+            ${stat('Probabilidad máxima · 48 h',fmt(b.prob,0,'%'))}
+            ${stat('Intensidad horaria máxima · 48 h',fmt(b.peak,1,' mm/h'))}
+          </div>
+          <div class="rain-model-note">${available?`Acumulados calculados con ${Math.min(available,48)} horas coincidentes con la escala temporal de referencia.`:'Sin horas coincidentes para comparar.'} Los valores desconocidos no se estiman.</div>
+        </article>`;
+      });
+      container.innerHTML=cards.join('');
     }
     function renderForecast(data, now) {
       const d=daily(data.models?.ecmwf), container=document.getElementById("forecast");
@@ -335,7 +385,7 @@
           document.getElementById("coordinates").textContent=`${Number(loc.latitude).toFixed(4)}° N · ${Math.abs(Number(loc.longitude)).toFixed(4)}° O · ${fmt(loc.elevation,0," m")}`;
         }
         const now=new Date();
-        renderCurrent(data); renderModels(data,now); renderChart(data,now); renderForecast(data,now);
+        renderCurrent(data); renderModels(data,now); renderChart(data,now); renderForecast(data,now); renderRainAnalysis(data,now);
         const generated=data.generated_at?new Date(data.generated_at):null;
         const generatedText=generated&&!Number.isNaN(generated.getTime())?new Intl.DateTimeFormat("es-ES",{dateStyle:"short",timeStyle:"short"}).format(generated):"fecha no disponible";
         document.getElementById("updatedAt").textContent=`Datos generados: ${generatedText}`;
