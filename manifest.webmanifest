@@ -1,0 +1,22 @@
+
+{
+  "id": "./",
+  "name": "Meteo Radar Sanse",
+  "short_name": "Meteo Radar",
+  "description": "Previsión meteorológica multimodelo para San Sebastián de los Reyes.",
+  "lang": "es-ES",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#08111f",
+  "theme_color": "#08111f",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
