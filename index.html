@@ -2,16 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#08111f">
-  <meta name="description" content="Meteo Radar Sanse: previsión meteorológica multimodelo para San Sebastián de los Reyes.">
+  <meta name="description" content="Previsión meteorológica multimodelo para San Sebastián de los Reyes.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Meteo Radar">
-
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icons/icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <title>Meteo Radar Sanse</title>
   <style>
     :root {
@@ -72,16 +71,24 @@
     .stat-value { font-size:14px; font-weight:650; margin-top:4px; }
     .ecmwf { border-top:3px solid var(--blue); } .gfs { border-top:3px solid var(--green); } .arome { border-top:3px solid var(--purple); }
     .chart-card { padding:20px 20px 16px; }
-    .chart-wrap { position:relative; height:455px; width:100%; }
+    .chart-wrap { position:relative; height:390px; width:100%; }
     canvas { display:block; width:100% !important; height:100% !important; }
     .legend-note { color:var(--muted); font-size:11px; margin-top:8px; }
-    .forecast { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
-    .day { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:15px; padding:13px 10px; text-align:center; min-width:0; }
-    .day-name { color:var(--muted); font-size:11px; font-weight:700; }
-    .day-icon { font-size:25px; margin:11px 0; }
-    .day-range { font-weight:750; font-size:14px; white-space:nowrap; }
-    .day-rain { color:#93c5fd; font-size:11px; margin-top:9px; line-height:1.55; }
-    .rain-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:13px; }
+    .forecast { display:flex; flex-direction:column; gap:7px; }
+    .day-row { appearance:none; display:grid; grid-template-columns:minmax(112px,1.25fr) minmax(100px,1fr) minmax(82px,.75fr) minmax(72px,.65fr); align-items:center; gap:10px; width:100%; padding:9px 13px; color:var(--text); text-align:left; background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:12px; cursor:pointer; transition:border-color .18s,background .18s,transform .18s; }
+    .day-row:hover { border-color:#47718f; background:#172b41; }
+    .day-row:active { transform:scale(.995); }
+    .day-row.is-selected { border-color:var(--cyan); background:linear-gradient(100deg,rgba(18,65,91,.72),rgba(17,30,48,.98)); box-shadow:inset 3px 0 0 var(--cyan); }
+    .day-date { display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .day-name { color:var(--text); font-size:12px; font-weight:750; text-transform:capitalize; }
+    .day-models { color:var(--muted); font-size:10px; }
+    .day-weather { display:flex; align-items:center; gap:8px; min-width:0; }
+    .day-icon { font-size:23px; flex:0 0 auto; }
+    .day-condition { color:var(--muted); font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .day-range { display:flex; align-items:baseline; justify-content:center; gap:7px; white-space:nowrap; font-size:13px; font-weight:750; }
+    .day-range .min { color:var(--muted); font-weight:550; }
+    .day-rain { color:#93c5fd; font-size:11px; text-align:right; white-space:nowrap; }
+    .rain-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; }
     .rain-model { background:linear-gradient(155deg,rgba(23,38,58,.96),rgba(17,30,48,.98)); border:1px solid var(--line); border-radius:16px; padding:16px; min-width:0; }
     .rain-model.ecmwf { border-top:3px solid var(--blue); } .rain-model.gfs { border-top:3px solid var(--green); } .rain-model.arome { border-top:3px solid var(--purple); }
     .rain-model-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:13px; }
@@ -92,7 +99,26 @@
     .rain-stat-value { font-size:20px; font-weight:750; margin-top:4px; }
     .rain-model-note { color:var(--muted); font-size:10px; line-height:1.5; margin-top:13px; padding-top:10px; border-top:1px solid var(--line); }
     .rain-footnote { color:var(--muted); font-size:11px; line-height:1.6; margin:12px 2px 0; }
+    .forecast .day { color:var(--muted); font-size:12px; }
     @media (max-width:760px) { .rain-grid { grid-template-columns:1fr; } .rain-model { padding:14px; } .rain-stat-value { font-size:19px; } }
+    .day-detail[hidden] { display:none !important; }
+    .day-detail-meta { color:var(--muted); font-size:12px; margin:0 0 12px; }
+    .day-chart-wrap { position:relative; height:350px; width:100%; }
+    .day-model-totals { margin-top:14px; }
+    .day-model-totals .rain-model { padding:12px; }
+    .day-model-totals .rain-stat-value { font-size:17px; }
+    @media (max-width:560px) {
+      .day-row { grid-template-columns:minmax(82px,1fr) minmax(45px,.55fr) minmax(66px,.7fr) minmax(57px,.6fr); gap:5px; padding:9px 8px; }
+      .day-name { font-size:11px; }
+      .day-models { font-size:9px; }
+      .day-weather { justify-content:center; }
+      .day-icon { font-size:21px; }
+      .day-condition { display:none; }
+      .day-range { font-size:12px; gap:4px; }
+      .day-rain { font-size:10px; }
+      .day-chart-wrap { height:310px; }
+    }
+    .radar-placeholder { display:flex; align-items:center; justify-content:center; min-height:150px; text-align:center; color:var(--muted); background:repeating-linear-gradient(135deg,rgba(56,189,248,.035) 0 10px,transparent 10px 20px),#0b1929; border:1px dashed #31516e; border-radius:14px; padding:22px; }
     footer { color:#71869d; font-size:11px; text-align:center; margin-top:25px; line-height:1.7; }
     .error-box { display:none; margin-top:14px; border:1px solid #7f1d1d; background:#3a1720; color:#fecdd3; border-radius:12px; padding:12px; font-size:12px; }
     @media (max-width:760px) {
@@ -101,12 +127,9 @@
       .hero { padding:17px; } .hero-top { flex-direction:column; } .updated { text-align:left; }
       .metrics { grid-template-columns:repeat(2,1fr); gap:9px; }
       .models { grid-template-columns:1fr; }
-      .forecast { grid-template-columns:repeat(2,1fr); }
-      .day:last-child { grid-column:span 2; }
       .chart-card { padding:13px 10px 12px; }
-      .chart-wrap { height:335px; }
+      .chart-wrap { height:300px; }
     }
-    @media (min-width:520px) and (max-width:760px) { .forecast { grid-template-columns:repeat(4,1fr); } .day:last-child { grid-column:auto; } }
   </style>
 </head>
 <body>
@@ -169,6 +192,16 @@
     <section class="section">
       <div class="section-head"><h2>Previsión de 7 días</h2><div class="hint">Resumen diario · ECMWF como referencia</div></div>
       <div id="forecast" class="forecast"><div class="day">Cargando previsión…</div></div>
+    </section>
+
+    <section id="dayDetail" class="section day-detail" hidden>
+      <div class="section-head"><h2 id="dayDetailTitle">Detalle del día</h2><div class="hint">Evolución horaria · tres modelos</div></div>
+      <div class="card chart-card">
+        <div id="dayDetailMeta" class="day-detail-meta">Selecciona un día para consultar su evolución.</div>
+        <div class="day-chart-wrap"><canvas id="dayChart" aria-label="Gráfico horario de temperatura y precipitación del día seleccionado"></canvas></div>
+        <div class="legend-note">Líneas: temperatura. Barras: precipitación horaria. Cada modelo aparece únicamente durante las horas para las que ofrece datos.</div>
+        <div id="dayModelTotals" class="rain-grid day-model-totals"></div>
+      </div>
     </section>
 
     <section class="section">
@@ -294,7 +327,7 @@
           type:"bar",label:`Precip. ${meta.title} · mm/h`,
           data:refTimes.map(ms=>{const i=timeIndex.get(ms);return h&&i!==undefined?get(h.precipitation,i):null;}),
           backgroundColor:rgba,borderColor:meta.color,borderWidth:1,
-          yAxisID:"y1",barPercentage:.78,categoryPercentage:.90,maxBarThickness:13,minBarLength:2,borderRadius:2,order:2
+          yAxisID:"y1",barPercentage:.62,categoryPercentage:.82,maxBarThickness:9,order:2
         });
       });
       const canvas=document.getElementById("evolutionChart");
@@ -324,6 +357,116 @@
         }
       });
     }
+    let dayChartInstance=null;
+    function renderSelectedDay(data, day) {
+      const panel=document.getElementById("dayDetail");
+      const title=document.getElementById("dayDetailTitle");
+      const metaLine=document.getElementById("dayDetailMeta");
+      const totals=document.getElementById("dayModelTotals");
+      panel.hidden=false;
+      title.textContent="Detalle · "+dateLabel(day,{weekday:"long",day:"numeric",month:"long"});
+      const allTimes=new Set();
+      Object.keys(MODEL_META).forEach(key=>{
+        const h=hourly(data.models?.[key]);
+        (h?.time||[]).forEach(t=>{if(String(t).slice(0,10)===day) allTimes.add(t);});
+      });
+      const times=[...allTimes].sort((a,b)=>new Date(a)-new Date(b));
+      const datasets=[];
+      const modelTotals=[];
+      Object.entries(MODEL_META).forEach(([key,modelMeta])=>{
+        const model=data.models?.[key], h=hourly(model);
+        if(!model || model.status!=="ok" || !h) {
+          modelTotals.push({modelMeta,available:false});
+          return;
+        }
+        const idx=new Map(h.time.map((t,i)=>[t,i]));
+        const values=times.map(t=>idx.has(t)?idx.get(t):-1);
+        const rgba=key==="ecmwf"?"rgba(56,189,248,.28)":key==="gfs"?"rgba(52,211,153,.25)":"rgba(167,139,250,.25)";
+        datasets.push({
+          type:"line",label:modelMeta.title+" · °C",
+          data:times.map(t=>{const i=idx.get(t);return i!==undefined?get(h.temperature_2m,i):null; }),
+          borderColor:modelMeta.color,backgroundColor:modelMeta.color,borderWidth:2.6,
+          pointRadius:0,pointHoverRadius:4,tension:.28,spanGaps:false,yAxisID:"y",order:1
+        });
+        datasets.push({
+          type:"bar",label:"Lluvia "+modelMeta.title+" · mm/h",
+          data:times.map(t=>{const i=idx.get(t);return i!==undefined?get(h.precipitation,i):null; }),
+          backgroundColor:rgba,borderColor:modelMeta.color,borderWidth:1,
+          yAxisID:"y1",barPercentage:.78,categoryPercentage:.9,maxBarThickness:14,minBarLength:2,borderRadius:2,order:2
+        });
+        const rainVals=values.map(i=>i>=0?get(h.precipitation,i):null);
+        const snowVals=values.map(i=>i>=0?get(h.snowfall,i):null);
+        const rainKnown=rainVals.some(valid), snowKnown=snowVals.some(valid);
+        const rain=rainVals.filter(valid).reduce((s,v)=>s+Number(v),0);
+        const snow=snowVals.filter(valid).reduce((s,v)=>s+Number(v),0);
+        modelTotals.push({modelMeta,available:values.some(i=>i>=0),hours:values.filter(i=>i>=0).length,rain:rainKnown?rain:null,snow:snowKnown?snow:null});
+      });
+      metaLine.textContent=times.length
+        ? times.length+" horas disponibles en el conjunto de modelos · los horizontes pueden variar entre ECMWF, GFS y AROME."
+        : "No hay datos horarios para este día en los modelos disponibles.";
+      if(dayChartInstance) {dayChartInstance.destroy();dayChartInstance=null;}
+      const canvas=document.getElementById("dayChart");
+      if(times.length && typeof Chart!=="undefined") {
+        dayChartInstance=new Chart(canvas.getContext("2d"),{
+          data:{labels:times.map(t=>dateLabel(t,{hour:"2-digit",minute:"2-digit"})),datasets},
+          options:{
+            responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+            layout:{padding:{top:4,right:4,left:2,bottom:0}},
+            plugins:{
+              legend:{position:"top",labels:{color:"#c5d5e6",usePointStyle:true,pointStyle:"circle",boxWidth:8,boxHeight:8,padding:window.innerWidth<600?8:13,font:{size:window.innerWidth<600?8:10}}},
+              tooltip:{backgroundColor:"#0b1726",titleColor:"#fff",bodyColor:"#dbeafe",borderColor:"#38516c",borderWidth:1,padding:10}
+            },
+            scales:{
+              x:{ticks:{color:"#91a5bc",maxTicksLimit:window.innerWidth<600?7:12,maxRotation:0,minRotation:0,autoSkip:true,font:{size:9}},grid:{color:"rgba(145,165,188,.08)"}},
+              y:{position:"left",title:{display:true,text:"Temperatura °C",color:"#91a5bc"},ticks:{color:"#91a5bc",font:{size:9}},grid:{color:"rgba(145,165,188,.1)"}},
+              y1:{position:"right",beginAtZero:true,title:{display:true,text:"Lluvia mm/h",color:"#91a5bc"},ticks:{color:"#91a5bc",font:{size:9}},grid:{drawOnChartArea:false}}
+            }
+          }
+        });
+      }
+      totals.innerHTML=modelTotals.map(({modelMeta,available,hours,rain,snow})=>`
+        <article class="rain-model ${modelMeta.card}">
+          <div class="rain-model-head"><span class="rain-model-name" style="color:${modelMeta.color}">${modelMeta.title}</span><span class="rain-window">${available?hours+" h":"Sin datos"}</span></div>
+          <div class="rain-values">
+            <div><div class="rain-stat-label">Lluvia del día</div><div class="rain-stat-value">${fmt(rain,1," mm")}</div></div>
+            <div><div class="rain-stat-label">Nieve del día</div><div class="rain-stat-value">${fmt(snow,1," cm")}</div></div>
+          </div>
+        </article>`).join("");
+      panel.scrollIntoView({behavior:"smooth",block:"start"});
+    }
+    function renderForecast(data, now) {
+      const d=daily(data.models?.ecmwf), container=document.getElementById("forecast");
+      if(!d) { container.innerHTML='<div class="day-row">No hay datos diarios disponibles.</div>'; return; }
+      const today=now.toISOString().slice(0,10);
+      let ids=d.time.map((t,i)=>({t,i})).filter(x=>x.t>=today).slice(0,7);
+      if(!ids.length) ids=d.time.map((t,i)=>({t,i})).slice(-7);
+      container.innerHTML=ids.map(({t,i})=>{
+        const info=weatherInfo(get(d.weather_code,i));
+        const max=get(d.temperature_2m_max,i), min=get(d.temperature_2m_min,i);
+        const rain=get(d.precipitation_sum,i);
+        const modelsAvailable=Object.keys(MODEL_META).filter(key=>{
+          const md=daily(data.models?.[key]);
+          const j=md?.time?.indexOf(t)??-1;
+          return j>=0 && (valid(get(md.temperature_2m_max,j)) || valid(get(md.temperature_2m_min,j)));
+        }).length;
+        const modelLabel=modelsAvailable+" modelo"+(modelsAvailable===1?"":"s");
+        return `<button class="day-row" type="button" data-date="${t}" aria-pressed="false" aria-label="Ver evolución meteorológica del ${dateLabel(t,{weekday:"long",day:"numeric",month:"long"})}">
+          <span class="day-date"><span class="day-name">${dateLabel(t,{weekday:"long",day:"numeric",month:"short"})}</span><span class="day-models">${modelLabel} disponibles</span></span>
+          <span class="day-weather"><span class="day-icon" title="${info[1]}">${info[0]}</span><span class="day-condition">${info[1]}</span></span>
+          <span class="day-range"><span>${fmt(max,0,"°")}</span><span class="min">${fmt(min,0,"°")}</span></span>
+          <span class="day-rain">☔ ${fmt(rain,1," mm")}</span>
+        </button>`;
+      }).join("");
+      container.querySelectorAll(".day-row[data-date]").forEach(button=>{
+        button.addEventListener("click",()=>{
+          container.querySelectorAll(".day-row").forEach(row=>{
+            row.classList.toggle("is-selected",row===button);
+            row.setAttribute("aria-pressed",row===button?"true":"false");
+          });
+          renderSelectedDay(data,button.dataset.date);
+        });
+      });
+    }
     function renderRainAnalysis(data, now) {
       const container=document.getElementById("rainAnalysis");
       const base=hourly(data.models?.ecmwf);
@@ -342,7 +485,7 @@
           const snowKnown=selected.some(i=>i>=0&&valid(get(h.snowfall,i)));
           const probs=selected.map(i=>i>=0?get(h.precipitation_probability,i):null).filter(valid).map(Number);
           const peak=selected.map(i=>i>=0?get(h.precipitation,i):null).filter(valid).map(Number);
-          return {rain:rainKnown?rain:null,snow:snowKnown?snow:null,prob:probs.length?Math.max(...probs):null,peak:peak.length?Math.max(...peak):null,count:selected.filter(i=>i>=0).length};
+          return {rain:rainKnown?rain:null,snow:snowKnown?snow:null,prob:probs.length?Math.max(...probs):null,peak:peak.length?Math.max(...peak):null};
         };
         const a=summarize(24), b=summarize(48);
         const available=values.filter(i=>i>=0).length;
@@ -350,35 +493,14 @@
         return `<article class="rain-model ${meta.card}">
           <div class="rain-model-head"><span class="rain-model-name" style="color:${meta.color}">${meta.title}</span><span class="rain-window">${available} h disponibles</span></div>
           <div class="rain-values">
-            ${stat('Lluvia · 24 h',fmt(a.rain,1,' mm'))}
-            ${stat('Lluvia · 48 h',fmt(b.rain,1,' mm'))}
-            ${stat('Nieve · 24 h',fmt(a.snow,1,' cm'))}
-            ${stat('Nieve · 48 h',fmt(b.snow,1,' cm'))}
-            ${stat('Probabilidad máxima · 48 h',fmt(b.prob,0,'%'))}
-            ${stat('Intensidad horaria máxima · 48 h',fmt(b.peak,1,' mm/h'))}
+            ${stat('Lluvia · 24 h',fmt(a.rain,1,' mm'))}${stat('Lluvia · 48 h',fmt(b.rain,1,' mm'))}
+            ${stat('Nieve · 24 h',fmt(a.snow,1,' cm'))}${stat('Nieve · 48 h',fmt(b.snow,1,' cm'))}
+            ${stat('Probabilidad máxima · 48 h',fmt(b.prob,0,'%'))}${stat('Intensidad máxima · 48 h',fmt(b.peak,1,' mm/h'))}
           </div>
           <div class="rain-model-note">${available?`Acumulados calculados con ${Math.min(available,48)} horas coincidentes con la escala temporal de referencia.`:'Sin horas coincidentes para comparar.'} Los valores desconocidos no se estiman.</div>
         </article>`;
       });
       container.innerHTML=cards.join('');
-    }
-    function renderForecast(data, now) {
-      const d=daily(data.models?.ecmwf), container=document.getElementById("forecast");
-      if(!d) { container.innerHTML='<div class="day">No hay datos diarios disponibles.</div>'; return; }
-      const today=now.toISOString().slice(0,10);
-      let ids=d.time.map((t,i)=>({t,i})).filter(x=>x.t>=today).slice(0,7);
-      if(!ids.length) ids=d.time.map((t,i)=>({t,i})).slice(-7);
-      container.innerHTML=ids.map(({t,i})=>{
-        const info=weatherInfo(get(d.weather_code,i));
-        const max=get(d.temperature_2m_max,i), min=get(d.temperature_2m_min,i);
-        const rain=get(d.precipitation_sum,i), prob=get(d.precipitation_probability_max,i);
-        return `<article class="day">
-          <div class="day-name">${dateLabel(t,{weekday:"short",day:"numeric",month:"short"})}</div>
-          <div class="day-icon" title="${info[1]}">${info[0]}</div>
-          <div class="day-range">${fmt(max,0,"°")} / ${fmt(min,0,"°")}</div>
-          <div class="day-rain">☔ ${fmt(rain,1," mm")}<br>Prob. ${fmt(prob,0,"%")}</div>
-        </article>`;
-      }).join("");
     }
     async function loadData() {
       setStatus("Cargando datos…");
@@ -413,13 +535,10 @@
   <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js", {
-        scope: "./"
-      }).catch(error => {
-        console.error("Error registrando la aplicación:", error);
-      });
+      navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+        .catch(error => console.error("Error registrando la aplicación:", error));
     });
   }
-</script>
+  </script>
 </body>
 </html>
