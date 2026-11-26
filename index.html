@@ -153,7 +153,7 @@
       </div>
       <div class="metrics">
         <div class="metric"><div class="label">🌡️ Temperatura</div><div class="value" id="temperature">—</div><div class="detail" id="weatherText">Situación estimada por modelo</div></div>
-        <div class="metric"><div class="label">🤗 Sensación térmica</div><div class="value" id="feels">—</div><div class="detail">Modelo ECMWF</div></div>
+        <div class="metric"><div class="label">🤗 Sensación térmica</div><div class="value" id="feels">—</div><div class="detail" id="feelsModel">Modelo ECMWF</div></div>
         <div class="metric"><div class="label">💨 Viento</div><div class="value" id="wind">—</div><div class="detail" id="windDirection">Velocidad a 10 m</div></div>
         <div class="metric"><div class="label">💧 Humedad</div><div class="value" id="humidity">—</div><div class="detail">Humedad relativa</div></div>
       </div>
@@ -190,7 +190,7 @@
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Previsión de 7 días</h2><div class="hint">Resumen diario · ECMWF como referencia</div></div>
+      <div class="section-head"><h2>Previsión de 7 días</h2><div class="hint">Resumen diario · modelo disponible como referencia</div></div>
       <div id="forecast" class="forecast"><div class="day">Cargando previsión…</div></div>
     </section>
 
@@ -240,6 +240,14 @@
     const get = (arr, i) => Array.isArray(arr) && i < arr.length ? arr[i] : null;
     const hourly = m => m && m.hourly && Array.isArray(m.hourly.time) ? m.hourly : null;
     const daily = m => m && m.daily && Array.isArray(m.daily.time) ? m.daily : null;
+    const modelUsable = m => m && ["ok","stale"].includes(m.status);
+    function firstModelWithData(data, type="hourly") {
+      return Object.keys(MODEL_META).find(key => {
+        const model=data.models?.[key];
+        const series=type==="hourly" ? hourly(model) : daily(model);
+        return modelUsable(model) && series && Array.isArray(series.time) && series.time.length;
+      }) || null;
+    }
     const weatherInfo = code => valid(code) && WEATHER[Number(code)] ? WEATHER[Number(code)] : ["🌡️","Sin descripción"];
     function nearestIndex(times, now) {
       if (!Array.isArray(times) || !times.length) return -1;
@@ -265,10 +273,12 @@
       const el=document.getElementById("status"); el.textContent=text; el.className="status"+(type?" "+type:"");
     }
     function renderCurrent(data) {
-      const e = data.models?.ecmwf, h = hourly(e), now = new Date();
-      if (!h) throw new Error("El JSON no contiene datos horarios ECMWF.");
-      let i = nearestIndex(h.time, now);
-      if (i < 0) throw new Error("No se han encontrado horas válidas en el modelo ECMWF.");
+      const key=firstModelWithData(data,"hourly");
+      const h=key ? hourly(data.models[key]) : null;
+      const now=new Date();
+      if (!h) throw new Error("No hay datos horarios utilizables en ningún modelo.");
+      const i=nearestIndex(h.time,now);
+      if (i<0) throw new Error("No se han encontrado horas válidas en los modelos disponibles.");
       const temp=get(h.temperature_2m,i), feels=get(h.apparent_temperature,i), wind=get(h.wind_speed_10m,i);
       const humidity=get(h.relative_humidity_2m,i), direction=get(h.wind_direction_10m,i), code=get(h.weather_code,i);
       document.getElementById("temperature").textContent=fmt(temp,1,"°");
@@ -276,14 +286,21 @@
       document.getElementById("wind").textContent=fmt(wind,1," km/h");
       document.getElementById("humidity").textContent=fmt(humidity,0,"%");
       const info=weatherInfo(code);
-      document.getElementById("weatherText").textContent=info[0]+" "+info[1]+" · estimación ECMWF";
+      const suffix=data.models[key].status==="stale"?" · último dato válido":"";
+      document.getElementById("weatherText").textContent=info[0]+" "+info[1]+" · estimación "+MODEL_META[key].title+suffix;
+      document.getElementById("feelsModel").textContent="Modelo "+MODEL_META[key].title;
       document.getElementById("windDirection").textContent=valid(direction)?`Dirección ${Math.round(Number(direction))}° · velocidad a 10 m`:"Velocidad a 10 m";
     }
     function renderModels(data, now) {
       Object.entries(MODEL_META).forEach(([key,meta])=>{
         const model=data.models?.[key], h=hourly(model), card=document.getElementById(meta.card);
-        if (!model || model.status!=="ok" || !h) {
+        if (!modelUsable(model) || !h) {
           card.querySelector('[data-field="description"]').textContent="Modelo no disponible";
+          card.querySelector('[data-field="temp"]').textContent="—";
+          card.querySelector('[data-field="rain"]').textContent="—";
+          card.querySelector('[data-field="prob"]').textContent="—";
+          card.querySelector('[data-field="wind"]').textContent="—";
+          card.querySelector('[data-field="humidity"]').textContent="—";
           return;
         }
         const i=nearestIndex(h.time,now);
@@ -291,7 +308,7 @@
         const prob=get(h.precipitation_probability,i), wind=get(h.wind_speed_10m,i), humidity=get(h.relative_humidity_2m,i);
         card.querySelector('[data-field="temp"]').textContent=fmt(temp,1,"°");
         const info=weatherInfo(code);
-        card.querySelector('[data-field="description"]').textContent=info[0]+" "+info[1];
+        card.querySelector('[data-field="description"]').textContent=info[0]+" "+info[1]+(model.status==="stale"?" · último dato válido":"");
         card.querySelector('[data-field="rain"]').textContent=fmt(rain,1," mm");
         card.querySelector('[data-field="prob"]').textContent=fmt(prob,0,"%");
         card.querySelector('[data-field="wind"]').textContent=fmt(wind,1," km/h");
@@ -300,11 +317,11 @@
     }
     let chartInstance=null;
     function renderChart(data, now) {
-      const ref=hourly(data.models?.ecmwf);
+      const referenceKey=firstModelWithData(data,"hourly");
+      const ref=referenceKey ? hourly(data.models[referenceKey]) : null;
       if (!ref) return;
       const ids=nextIndices(ref.time,now,48);
       if (!ids.length) return;
-      // Alinea los modelos por hora real, aunque sus horizontes sean distintos.
       const labels=ids.map(i=>dateLabel(ref.time[i],{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}));
       const refTimes=ids.map(i=>new Date(ref.time[i]).getTime());
       const datasets=[];
@@ -375,7 +392,7 @@
       const modelTotals=[];
       Object.entries(MODEL_META).forEach(([key,modelMeta])=>{
         const model=data.models?.[key], h=hourly(model);
-        if(!model || model.status!=="ok" || !h) {
+        if(!modelUsable(model) || !h) {
           modelTotals.push({modelMeta,available:false});
           return;
         }
@@ -435,8 +452,10 @@
       panel.scrollIntoView({behavior:"smooth",block:"start"});
     }
     function renderForecast(data, now) {
-      const d=daily(data.models?.ecmwf), container=document.getElementById("forecast");
-      if(!d) { container.innerHTML='<div class="day-row">No hay datos diarios disponibles.</div>'; return; }
+      const referenceKey=firstModelWithData(data,"daily");
+      const d=referenceKey ? daily(data.models[referenceKey]) : null;
+      const container=document.getElementById("forecast");
+      if(!d) { container.innerHTML='<div class="day-row">No hay datos diarios disponibles en los modelos.</div>'; return; }
       const today=now.toISOString().slice(0,10);
       let ids=d.time.map((t,i)=>({t,i})).filter(x=>x.t>=today).slice(0,7);
       if(!ids.length) ids=d.time.map((t,i)=>({t,i})).slice(-7);
@@ -469,12 +488,13 @@
     }
     function renderRainAnalysis(data, now) {
       const container=document.getElementById("rainAnalysis");
-      const base=hourly(data.models?.ecmwf);
+      const referenceKey=firstModelWithData(data,"hourly");
+      const base=referenceKey ? hourly(data.models[referenceKey]) : null;
       if(!base) { container.innerHTML='<article class="rain-model"><div class="rain-model-note">No hay horas de referencia para calcular los acumulados.</div></article>'; return; }
       const reference=nextIndices(base.time,now,48).map(i=>new Date(base.time[i]).getTime());
       const cards=Object.entries(MODEL_META).map(([key,meta])=>{
         const model=data.models?.[key], h=hourly(model);
-        if(!model || model.status!=="ok" || !h) return `<article class="rain-model ${meta.card}"><div class="rain-model-head"><span class="rain-model-name">${meta.title}</span></div><div class="rain-model-note">Modelo no disponible en esta actualización.</div></article>`;
+        if(!modelUsable(model) || !h) return `<article class="rain-model ${meta.card}"><div class="rain-model-head"><span class="rain-model-name">${meta.title}</span></div><div class="rain-model-note">Modelo no disponible en esta actualización.</div></article>`;
         const index=new Map(h.time.map((t,i)=>[new Date(t).getTime(),i]));
         const values=reference.map(ms=>index.has(ms)?index.get(ms):-1);
         const summarize=hours=>{
@@ -491,7 +511,7 @@
         const available=values.filter(i=>i>=0).length;
         const stat=(label,value)=>`<div><div class="rain-stat-label">${label}</div><div class="rain-stat-value">${value}</div></div>`;
         return `<article class="rain-model ${meta.card}">
-          <div class="rain-model-head"><span class="rain-model-name" style="color:${meta.color}">${meta.title}</span><span class="rain-window">${available} h disponibles</span></div>
+          <div class="rain-model-head"><span class="rain-model-name" style="color:${meta.color}">${meta.title}</span><span class="rain-window">${available} h disponibles${model.status==="stale"?" · anteriores":""}</span></div>
           <div class="rain-values">
             ${stat('Lluvia · 24 h',fmt(a.rain,1,' mm'))}${stat('Lluvia · 48 h',fmt(b.rain,1,' mm'))}
             ${stat('Nieve · 24 h',fmt(a.snow,1,' cm'))}${stat('Nieve · 48 h',fmt(b.snow,1,' cm'))}
@@ -509,6 +529,7 @@
         if(!response.ok) throw new Error(`No se pudo leer ${DATA_URL} (HTTP ${response.status}).`);
         const data=await response.json();
         if(!data || !data.models) throw new Error("El archivo JSON no tiene la estructura esperada.");
+        if(!firstModelWithData(data,"hourly")) throw new Error("El JSON no contiene datos horarios utilizables en ningún modelo.");
         const loc=data.location||{};
         document.getElementById("locationName").textContent=loc.name||"San Sebastián de los Reyes";
         if(valid(loc.latitude)&&valid(loc.longitude)) {
@@ -519,9 +540,21 @@
         const generated=data.generated_at?new Date(data.generated_at):null;
         const generatedText=generated&&!Number.isNaN(generated.getTime())?new Intl.DateTimeFormat("es-ES",{dateStyle:"short",timeStyle:"short"}).format(generated):"fecha no disponible";
         document.getElementById("updatedAt").textContent=`Datos generados: ${generatedText}`;
-        document.getElementById("sourceInfo").textContent=`Fuente: data/radar.json · ${data.summary?.models_available??"—"} de ${data.summary?.models_requested??"—"} modelos disponibles`;
-        setStatus("Datos cargados","ok");
-        document.getElementById("errorBox").style.display="none";
+        document.getElementById("sourceInfo").textContent=`Fuente: data/radar.json · ${data.summary?.models_available??"—"} de ${data.summary?.models_requested??"—"} modelos utilizables`;
+        const staleModels=Object.keys(MODEL_META).filter(key=>data.models?.[key]?.status==="stale");
+        const failedModels=Object.keys(MODEL_META).filter(key=>data.models?.[key]?.status==="error");
+        const warningParts=[];
+        if(staleModels.length) warningParts.push("Se conservan los últimos datos válidos de: "+staleModels.map(key=>MODEL_META[key].title).join(", ")+".");
+        if(failedModels.length) warningParts.push("Sin datos disponibles para: "+failedModels.map(key=>MODEL_META[key].title).join(", ")+".");
+        if(warningParts.length) {
+          setStatus("Datos parciales","error");
+          const box=document.getElementById("errorBox");
+          box.style.display="block";
+          box.textContent=warningParts.join(" ");
+        } else {
+          setStatus("Datos cargados","ok");
+          document.getElementById("errorBox").style.display="none";
+        }
       } catch(error) {
         console.error(error); setStatus("Error de datos","error");
         const box=document.getElementById("errorBox"); box.style.display="block";

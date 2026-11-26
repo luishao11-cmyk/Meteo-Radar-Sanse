@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -32,7 +31,6 @@ LOCATION = {
 }
 
 API_URL = "https://api.open-meteo.com/v1/forecast"
-
 OUTPUT_FILE = Path("data/radar.json")
 
 MODELS = {
@@ -42,31 +40,16 @@ MODELS = {
 }
 
 HOURLY_VARIABLES = [
-    "temperature_2m",
-    "apparent_temperature",
-    "precipitation_probability",
-    "precipitation",
-    "rain",
-    "snowfall",
-    "weather_code",
-    "wind_speed_10m",
-    "wind_gusts_10m",
-    "wind_direction_10m",
-    "relative_humidity_2m",
-    "cloud_cover",
-    "freezing_level_height",
+    "temperature_2m", "apparent_temperature", "precipitation_probability",
+    "precipitation", "rain", "snowfall", "weather_code", "wind_speed_10m",
+    "wind_gusts_10m", "wind_direction_10m", "relative_humidity_2m",
+    "cloud_cover", "freezing_level_height",
 ]
 
 DAILY_VARIABLES = [
-    "weather_code",
-    "temperature_2m_max",
-    "temperature_2m_min",
-    "precipitation_sum",
-    "precipitation_probability_max",
-    "wind_speed_10m_max",
-    "wind_gusts_10m_max",
-    "sunrise",
-    "sunset",
+    "weather_code", "temperature_2m_max", "temperature_2m_min",
+    "precipitation_sum", "precipitation_probability_max",
+    "wind_speed_10m_max", "wind_gusts_10m_max", "sunrise", "sunset",
 ]
 
 
@@ -96,21 +79,21 @@ def get_model_forecast(model_name: str) -> dict:
 
     for attempt in range(1, 4):
         try:
-            response = requests.get(
-                API_URL,
-                params=params,
-                timeout=60,
-            )
-
+            response = requests.get(API_URL, params=params, timeout=60)
             response.raise_for_status()
             result = response.json()
 
             if "hourly" not in result or "daily" not in result:
                 raise ValueError("La respuesta no contiene datos horarios y diarios.")
+            if not isinstance(result["hourly"].get("time"), list) or not result["hourly"]["time"]:
+                raise ValueError("La respuesta no contiene horas válidas.")
+            if not isinstance(result["daily"].get("time"), list) or not result["daily"]["time"]:
+                raise ValueError("La respuesta no contiene días válidos.")
 
             return {
                 "status": "ok",
                 "model": model_name,
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
                 "latitude": result.get("latitude"),
                 "longitude": result.get("longitude"),
                 "elevation": result.get("elevation"),
@@ -124,7 +107,6 @@ def get_model_forecast(model_name: str) -> dict:
                 f"  Intento {attempt}/3 fallido para "
                 f"{model_name}: {last_error}"
             )
-
             if attempt < 3:
                 time.sleep(5 * attempt)
 
@@ -147,11 +129,18 @@ def generate_radar_data() -> dict:
     print(f"Ubicación: {LOCATION['name']}")
     print("Consultando modelos meteorológicos...\n")
 
+    # Leemos la última publicación válida antes de consultar los modelos.
+    previous_data = {}
+    try:
+        if OUTPUT_FILE.exists():
+            previous_data = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"  AVISO: no se ha podido leer la previsión anterior: {error}")
+
     forecasts = {}
 
     for short_name, model_name in MODELS.items():
         print(f"Consultando {short_name.upper()} ({model_name})...")
-
         forecasts[short_name] = get_model_forecast(model_name)
 
         if forecasts[short_name]["status"] == "ok":
@@ -159,22 +148,69 @@ def generate_radar_data() -> dict:
         else:
             print(f"  AVISO: no se han podido obtener datos de {short_name.upper()}.")
 
-    successful_models = [
-        name
-        for name, forecast in forecasts.items()
-        if forecast["status"] == "ok"
+    # Si falla un modelo, conserva su último pronóstico válido.
+    previous_models = previous_data.get("models", {})
+    for name, forecast in list(forecasts.items()):
+        if forecast.get("status") != "error":
+            continue
+
+        previous = previous_models.get(name, {})
+        previous_hourly = previous.get("hourly")
+        previous_daily = previous.get("daily")
+
+        if (
+            previous.get("status") in ("ok", "stale")
+            and isinstance(previous_hourly, dict)
+            and isinstance(previous_hourly.get("time"), list)
+            and previous_hourly["time"]
+            and isinstance(previous_daily, dict)
+            and isinstance(previous_daily.get("time"), list)
+            and previous_daily["time"]
+        ):
+            forecasts[name] = {
+                **previous,
+                "status": "stale",
+                "error": forecast.get("error"),
+                "last_successful_at": (
+                    previous.get("retrieved_at")
+                    or previous.get("last_successful_at")
+                    or previous_data.get("generated_at")
+                ),
+            }
+            print(f"  Se conserva el último pronóstico válido de {name.upper()}.")
+
+    available_models = [
+        name for name, forecast in forecasts.items()
+        if forecast.get("status") in ("ok", "stale")
+        and isinstance(forecast.get("hourly"), dict)
+        and isinstance(forecast["hourly"].get("time"), list)
+        and bool(forecast["hourly"]["time"])
+        and isinstance(forecast.get("daily"), dict)
+        and isinstance(forecast["daily"].get("time"), list)
+        and bool(forecast["daily"]["time"])
+    ]
+    fresh_models = [
+        name for name, forecast in forecasts.items()
+        if forecast.get("status") == "ok"
+    ]
+    stale_models = [
+        name for name, forecast in forecasts.items()
+        if forecast.get("status") == "stale"
     ]
 
     return {
         "project": "Meteo Radar Sanse",
-        "version": "1.0",
+        "version": "1.1",
         "location": LOCATION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "models": forecasts,
         "summary": {
             "models_requested": len(MODELS),
-            "models_available": len(successful_models),
-            "available_models": successful_models,
+            "models_available": len(available_models),
+            "available_models": available_models,
+            "models_fresh": len(fresh_models),
+            "models_stale": len(stale_models),
+            "stale_models": stale_models,
         },
     }
 
@@ -186,36 +222,41 @@ def generate_radar_data() -> dict:
 def main() -> None:
     data = generate_radar_data()
 
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    temporary_file = OUTPUT_FILE.with_suffix(".tmp")
-
-    with temporary_file.open("w", encoding="utf-8") as file:
-        json.dump(
-            data,
-            file,
-            ensure_ascii=False,
-            indent=2,
+    # Si no hay ningún modelo nuevo ni datos anteriores utilizables,
+    # no se toca el radar.json que está publicado.
+    if data["summary"]["models_available"] == 0:
+        raise RuntimeError(
+            "No hay datos nuevos ni pronósticos anteriores válidos. "
+            "Se conserva intacto el radar.json publicado."
         )
 
-    os.replace(temporary_file, OUTPUT_FILE)
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temporary_file = OUTPUT_FILE.with_suffix(".tmp")
+
+    try:
+        with temporary_file.open("w", encoding="utf-8") as file:
+            json.dump(data, file, ensure_ascii=False, indent=2)
+            file.flush()
+            os.fsync(file.fileno())
+
+        # Sustitución atómica: el archivo final nunca queda escrito a medias.
+        os.replace(temporary_file, OUTPUT_FILE)
+    finally:
+        if temporary_file.exists():
+            temporary_file.unlink()
 
     print("\n" + "=" * 45)
     print(f"Archivo generado: {OUTPUT_FILE}")
     print(
-        f"Modelos disponibles: "
-        f"{data['summary']['models_available']}/"
+        f"Modelos utilizables: {data['summary']['models_available']}/"
         f"{data['summary']['models_requested']}"
     )
-
-    if data["summary"]["models_available"] == 0:
-        raise RuntimeError(
-            "No se ha podido obtener información de ningún modelo."
-        )
-
+    print(
+        f"Modelos actualizados: {data['summary']['models_fresh']} · "
+        f"datos anteriores conservados: {data['summary']['models_stale']}"
+    )
     print("Meteo Radar Sanse: proceso terminado.")
 
 
 if __name__ == "__main__":
     main()
-
