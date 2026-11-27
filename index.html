@@ -551,23 +551,53 @@
         const generatedText=generated&&!Number.isNaN(generated.getTime())?new Intl.DateTimeFormat("es-ES",{dateStyle:"short",timeStyle:"short"}).format(generated):"fecha no disponible";
         document.getElementById("updatedAt").textContent=`Datos generados: ${generatedText}`;
         document.getElementById("sourceInfo").textContent=`Fuente: data/radar.json · ${data.summary?.models_available??"—"} de ${data.summary?.models_requested??"—"} modelos utilizables`;
-        const staleModels=Object.keys(MODEL_META).filter(key=>data.models?.[key]?.status==="stale");
+                const staleModels=Object.keys(MODEL_META).filter(key=>data.models?.[key]?.status==="stale");
         const failedModels=Object.keys(MODEL_META).filter(key=>data.models?.[key]?.status==="error");
-        const warningParts=[];
-        if(staleModels.length) warningParts.push("Se conservan los últimos datos válidos de: "+staleModels.map(key=>MODEL_META[key].title).join(", ")+".");
-        if(failedModels.length) warningParts.push("Sin datos disponibles para: "+failedModels.map(key=>MODEL_META[key].title).join(", ")+".");
-        if(warningParts.length) {
+        const box=document.getElementById("errorBox");
+
+        const staleNames=staleModels.map(key=>MODEL_META[key].title);
+        const failedNames=failedModels.map(key=>MODEL_META[key].title);
+
+        if(failedModels.length) {
           setStatus("Datos parciales","error");
-          const box=document.getElementById("errorBox");
+          box.className="error-box";
           box.style.display="block";
-          box.textContent=warningParts.join(" ");
+
+          let message="";
+          if(staleModels.length) {
+            message+="Se conservan los últimos datos válidos de: "+staleNames.join(", ")+". ";
+          }
+          message+="Sin datos disponibles para: "+failedNames.join(", ")+".";
+          box.textContent=message;
+
+        } else if(staleModels.length) {
+          setStatus("Actualización pendiente","warning");
+          box.className="error-box warning";
+          box.style.display="block";
+
+          const details=staleModels.map(key=>{
+            const model=data.models[key];
+            const date=model.last_successful_at||model.retrieved_at;
+            if(!date) return MODEL_META[key].title;
+            const parsed=new Date(date);
+            if(Number.isNaN(parsed.getTime())) return MODEL_META[key].title;
+            const formatted=new Intl.DateTimeFormat("es-ES",{
+              dateStyle:"short",
+              timeStyle:"short"
+            }).format(parsed);
+            return MODEL_META[key].title+" (último dato válido: "+formatted+")";
+          });
+
+          box.textContent="Actualización temporal pendiente de: "+details.join(", ")+". Se muestran sus últimos datos válidos. La página volverá a comprobar los datos automáticamente.";
+
         } else {
-          setStatus("Datos cargados","ok");
-          document.getElementById("errorBox").style.display="none";
+          setStatus("Todo actualizado","ok");
+          box.style.display="none";
+          box.className="error-box";
         }
       } catch(error) {
         console.error(error); setStatus("Error de datos","error");
-        const box=document.getElementById("errorBox"); box.style.display="block";
+        const box=document.getElementById("errorBox"); box.className="error-box"; box.style.display="block";
         box.textContent=`No se han podido cargar los datos meteorológicos. ${error.message} Comprueba que index.html está en la raíz y que radar.json está dentro de la carpeta data.`;
       }
     }
